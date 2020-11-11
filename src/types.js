@@ -22,7 +22,7 @@ exports.boolean = (function () {
 })()
 
 exports.ipAddress = (function () {
-  let IPV4_PREFIX = Buffer.from('00000000000000000000ffff', 'hex')
+  const IPV4_PREFIX = Buffer.from('00000000000000000000ffff', 'hex')
   function encode (value, buffer, offset) {
     if (!buffer) buffer = Buffer.alloc(16)
     if (!offset) offset = 0
@@ -45,7 +45,7 @@ exports.ipAddress = (function () {
     if (!end) end = buffer.length
     if (offset + 16 > end) throw new RangeError('not enough data for decode')
 
-    let start = buffer.slice(offset, offset + 12).equals(IPV4_PREFIX) ? 12 : 0
+    const start = buffer.slice(offset, offset + 12).equals(IPV4_PREFIX) ? 12 : 0
     return ip.toString(buffer.slice(offset + start, offset + 16))
   }
 
@@ -81,18 +81,18 @@ exports.alertPayload = struct([
 ])
 
 exports.messageCommand = (function () {
-  let buffer12 = struct.Buffer(12)
+  const buffer12 = struct.Buffer(12)
 
   function encode (value, buffer, offset) {
-    let bvalue = Buffer.from(value, 'ascii')
-    let nvalue = Buffer.alloc(12)
+    const bvalue = Buffer.from(value, 'ascii')
+    const nvalue = Buffer.alloc(12)
     bvalue.copy(nvalue, 0)
     for (let i = bvalue.length; i < nvalue.length; ++i) nvalue[i] = 0
     return buffer12.encode(nvalue, buffer, offset)
   }
 
   function decode (buffer, offset, end) {
-    let bvalue = buffer12.decode(buffer, offset, end)
+    const bvalue = buffer12.decode(buffer, offset, end)
     let stop
     for (stop = 0; bvalue[stop] !== 0; ++stop) {
       if (stop === 11) {
@@ -111,7 +111,7 @@ exports.messageCommand = (function () {
   return { encode, decode, encodingLength: () => 12 }
 })()
 
-let transaction = struct([
+const transaction = struct([
   { name: 'version', type: struct.Int32LE },
   {
     name: 'ins',
@@ -131,7 +131,7 @@ let transaction = struct([
   },
   { name: 'locktime', type: struct.UInt32LE }
 ])
-let witnessTransaction = struct([
+const witnessTransaction = struct([
   { name: 'version', type: struct.Int32LE },
   { name: 'marker', type: struct.Byte },
   { name: 'flag', type: struct.Byte },
@@ -152,13 +152,13 @@ let witnessTransaction = struct([
     ]))
   }
 ])
-let varBufferArray = struct.VarArray(varint, exports.varBuffer)
+const varBufferArray = struct.VarArray(varint, exports.varBuffer)
 exports.transaction = (function () {
   function encode (value, buffer = Buffer.alloc(encodingLength(value)), offset = 0) {
     value = Object.assign({}, value)
-    let hasWitness = value.ins.some(({ witness }) =>
+    const hasWitness = value.ins.some(({ witness }) =>
       witness != null && witness.length > 0)
-    let type = hasWitness ? witnessTransaction : transaction
+    const type = hasWitness ? witnessTransaction : transaction
 
     if (hasWitness) {
       value.marker = 0
@@ -169,11 +169,11 @@ exports.transaction = (function () {
     let bytes = type.encode.bytes
 
     if (hasWitness) {
-      let encode = (type, value) => {
+      const encode = (type, value) => {
         type.encode(value, buffer, offset + bytes)
         bytes += type.encode.bytes
       }
-      for (let input of value.ins) {
+      for (const input of value.ins) {
         encode(varBufferArray, input.witness || [])
       }
       encode(struct.UInt32LE, value.locktime)
@@ -184,23 +184,23 @@ exports.transaction = (function () {
   }
 
   function decode (buffer, offset = 0, end = buffer.length) {
-    let hasWitness = buffer[offset + 4] === 0
-    let type = hasWitness ? witnessTransaction : transaction
+    const hasWitness = buffer[offset + 4] === 0
+    const type = hasWitness ? witnessTransaction : transaction
 
-    let tx = type.decode(buffer, offset, end)
+    const tx = type.decode(buffer, offset, end)
     decode.bytes = type.decode.bytes
     return tx
   }
 
   function encodingLength (value) {
     value = Object.assign({}, value)
-    let hasWitness = value.ins.some(({ witness }) =>
+    const hasWitness = value.ins.some(({ witness }) =>
       witness != null && witness.length > 0)
-    let type = hasWitness ? witnessTransaction : transaction
+    const type = hasWitness ? witnessTransaction : transaction
 
     let witnessLength = 0
     if (hasWitness) {
-      for (let input of value.ins) {
+      for (const input of value.ins) {
         witnessLength += varBufferArray.encodingLength(input.witness || [])
       }
       witnessLength += 4

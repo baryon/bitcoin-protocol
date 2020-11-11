@@ -1,16 +1,16 @@
 'use strict'
-var test = require('tape')
-var tmp = require('tmp')
-var spawn = require('child_process').spawn
-var RPCClient = require('bitcoin').Client
-var net = require('net')
-var bitcoinjs = require('bitcoinjs-lib')
-var randomBytes = require('crypto').randomBytes
-var bufferReverse = require('buffer-reverse')
-var bp = require('../../')
+const test = require('tape')
+const tmp = require('tmp')
+const spawn = require('child_process').spawn
+const RPCClient = require('bitcoin').Client
+const net = require('net')
+const bitcoinjs = require('bitcoinjs-lib')
+const randomBytes = require('crypto').randomBytes
+const bufferReverse = require('buffer-reverse')
+const bp = require('../../')
 
-var REGTEST_MAGIC = require('coininfo').bitcoin.regtest.protocol.magic
-var ZERO_HASH256 = new Buffer(32)
+const REGTEST_MAGIC = require('coininfo').bitcoin.regtest.protocol.magic
+const ZERO_HASH256 = Buffer.from(32)
 ZERO_HASH256.fill(0)
 
 function validateHeader (t, found, wanted) {
@@ -31,18 +31,18 @@ function validateBlock (t, found, wanted) {
   t.same(found.header.bits, wanted.bits)
   t.same(found.header.nonce, wanted.nonce)
   t.same(found.transactions.length, wanted.transactions.length)
-  for (var i = 0; i < found.transactions.length; ++i) {
+  for (let i = 0; i < found.transactions.length; ++i) {
     t.same(found.transactions[i].version, wanted.transactions[i].version)
     t.same(found.transactions[i].locktime, wanted.transactions[i].locktime)
     t.same(found.transactions[i].ins.length, wanted.transactions[i].ins.length)
-    for (var ij = 0; ij < found.transactions[i].ins.length; ++ij) {
+    for (let ij = 0; ij < found.transactions[i].ins.length; ++ij) {
       t.same(found.transactions[i].ins[ij].hash.toString('hex'), wanted.transactions[i].ins[ij].hash.toString('hex'))
       t.same(found.transactions[i].ins[ij].index, wanted.transactions[i].ins[ij].index)
       t.same(found.transactions[i].ins[ij].script.toString('hex'), wanted.transactions[i].ins[ij].script.toString('hex'))
       t.same(found.transactions[i].ins[ij].sequence, wanted.transactions[i].ins[ij].sequence)
     }
     t.same(found.transactions[i].outs.length, wanted.transactions[i].outs.length)
-    for (var oj = 0; oj < found.transactions[i].outs.length; ++oj) {
+    for (let oj = 0; oj < found.transactions[i].outs.length; ++oj) {
       // https://github.com/mappum/bitcoin-protocol/issues/10
       // t.same(found.transactions[i].outs[oj].value, wanted.transactions[i].outs[oj].value)
       t.same(found.transactions[i].outs[oj].script.toString('hex'), wanted.transactions[i].outs[oj].script.toString('hex'))
@@ -51,15 +51,15 @@ function validateBlock (t, found, wanted) {
 }
 
 test('Integration with bitcoin core in regtest mode', function (t) {
-  var bitcoindPort = 10000 + Math.floor(Math.random() * 40000)
-  var bitcoindRPCPort = 10000 + Math.floor(Math.random() * 40000)
-  var bitcoind
-  var rpc
-  var socket
+  const bitcoindPort = 10000 + Math.floor(Math.random() * 40000)
+  const bitcoindRPCPort = 10000 + Math.floor(Math.random() * 40000)
+  let bitcoind
+  let rpc
+  let socket
 
   t.test('spawn process', function (t) {
     tmp.setGracefulCleanup()
-    var datadir = tmp.dirSync({
+    const datadir = tmp.dirSync({
       prefix: 'bitcoin-protocol-regtest-',
       keep: false,
       unsafeCleanup: true
@@ -99,7 +99,7 @@ test('Integration with bitcoin core in regtest mode', function (t) {
   })
 
   // beforeEach & afterEach
-  var _test = t.test
+  const _test = t.test
   t.test = function (name, fn) {
     _test(name, function (t) {
       socket = net.connect(bitcoindPort, '127.0.0.1')
@@ -110,7 +110,7 @@ test('Integration with bitcoin core in regtest mode', function (t) {
       socket.encoder = bp.createEncodeStream({ magic: REGTEST_MAGIC })
       socket.encoder.pipe(socket)
 
-      var _end = t.end
+      const _end = t.end
       t.end = function () {
         if (socket) {
           socket.destroy()
@@ -137,19 +137,19 @@ test('Integration with bitcoin core in regtest mode', function (t) {
 
   function connect (next) {
     return function (t) {
-      var versionMsg = {
+      const versionMsg = {
         command: 'version',
         payload: {
           version: 70000,
-          services: new Buffer('0100000000000000', 'hex'),
+          services: Buffer.from('0100000000000000', 'hex'),
           timestamp: Math.round(Date.now() / 1000),
           receiverAddress: {
-            services: new Buffer('0100000000000000', 'hex'),
+            services: Buffer.from('0100000000000000', 'hex'),
             address: '10.0.0.1',
             port: 8333
           },
           senderAddress: {
-            services: new Buffer('0100000000000000', 'hex'),
+            services: Buffer.from('0100000000000000', 'hex'),
             address: '10.0.0.2',
             port: 8333
           },
@@ -161,7 +161,7 @@ test('Integration with bitcoin core in regtest mode', function (t) {
       }
       socket.encoder.write(versionMsg)
 
-      var waitVersionMsg = true
+      let waitVersionMsg = true
       function msgHandler (msg) {
         t.true(msg, 'got data')
         t.same(msg.magic, REGTEST_MAGIC)
@@ -191,7 +191,7 @@ test('Integration with bitcoin core in regtest mode', function (t) {
   })
 
   t.test('send ping -> wait pong', connect(function (t) {
-    var nonce = randomBytes(8)
+    const nonce = randomBytes(8)
 
     function msgHandler (msg) {
       if (msg.command !== 'pong') return
@@ -210,7 +210,7 @@ test('Integration with bitcoin core in regtest mode', function (t) {
   }))
 
   t.test('wait inv -> send getdata -> wait block', connect(function (t) {
-    var context = { state: 0 }
+    const context = { state: 0 }
     function msgHandler (msg) {
       switch (context.state) {
         case 1:
@@ -218,7 +218,7 @@ test('Integration with bitcoin core in regtest mode', function (t) {
           t.true(Array.isArray(msg.payload))
           t.same(msg.payload.length, 1)
           t.same(msg.payload[0].type, 2) // MSG_BLOCK
-          t.same(msg.payload[0].hash, bufferReverse(new Buffer(context.blockId, 'hex')))
+          t.same(msg.payload[0].hash, bufferReverse(Buffer.from(context.blockId, 'hex')))
 
           context.state = 2
           socket.encoder.write({
@@ -230,12 +230,13 @@ test('Integration with bitcoin core in regtest mode', function (t) {
           if (msg.command !== 'block') return
           rpc.getBlock(context.blockId, false, function (err, blockHex) {
             t.same(err, null)
-            validateBlock(t, msg.payload, bitcoinjs.Block.fromBuffer(new Buffer(blockHex, 'hex')))
+            validateBlock(t, msg.payload, bitcoinjs.Block.fromBuffer(Buffer.from(blockHex, 'hex')))
             t.end()
           })
-          return
+          break
+
         default:
-          return
+          break
       }
     }
 
@@ -283,31 +284,31 @@ test('Integration with bitcoin core in regtest mode', function (t) {
       command: 'getheaders',
       payload: {
         version: 70000,
-        locator: [new Buffer(ZERO_HASH256)],
-        hashStop: new Buffer(ZERO_HASH256)
+        locator: [Buffer.from(ZERO_HASH256)],
+        hashStop: Buffer.from(ZERO_HASH256)
       }
     })
   }))
 
   t.test('send getblocks -> wait blocks', connect(function (t) {
-    var context = { state: 0 }
+    const context = { state: 0 }
     function msgHandler (msg) {
+      let i = 0
       switch (context.state) {
         case 0:
           if (msg.command !== 'inv') return
           t.true(Array.isArray(msg.payload))
 
-          var i = 0
           context.next = function () {
             if (i >= msg.payload.length) return t.end()
 
             t.same(msg.payload[i].type, 2) // MSG_BLOCK
             t.same(msg.payload[i].hash.length, 32)
 
-            context.blockId = bufferReverse(new Buffer(msg.payload[i].hash)).toString('hex')
+            context.blockId = bufferReverse(Buffer.from(msg.payload[i].hash)).toString('hex')
             socket.encoder.write({
               command: 'getdata',
-              payload: [ msg.payload[i] ]
+              payload: [msg.payload[i]]
             })
 
             i += 1
@@ -320,12 +321,13 @@ test('Integration with bitcoin core in regtest mode', function (t) {
           if (msg.command !== 'block') return
           rpc.getBlock(context.blockId, false, function (err, blockHex) {
             t.same(err, null)
-            validateBlock(t, msg.payload, bitcoinjs.Block.fromBuffer(new Buffer(blockHex, 'hex')))
+            validateBlock(t, msg.payload, bitcoinjs.Block.fromBuffer(Buffer.from(blockHex, 'hex')))
             context.next()
           })
-          return
+          break
+
         default:
-          return
+          break
       }
     }
 
@@ -334,8 +336,8 @@ test('Integration with bitcoin core in regtest mode', function (t) {
       command: 'getblocks',
       payload: {
         version: 70000,
-        locator: [new Buffer(ZERO_HASH256)],
-        hashStop: new Buffer(ZERO_HASH256)
+        locator: [Buffer.from(ZERO_HASH256)],
+        hashStop: Buffer.from(ZERO_HASH256)
       }
     })
   }))

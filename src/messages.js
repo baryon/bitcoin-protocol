@@ -6,23 +6,23 @@ const defaultTypes = require('./types.js')
 
 function createMessages (messages) {
   function extend (child) {
-    let output = {}
-    for (let k in messages) output[k] = messages[k]
-    for (let k in child) output[k] = child[k]
+    const output = {}
+    for (const k in messages) output[k] = messages[k]
+    for (const k in child) output[k] = child[k]
     return createMessages(output)
   }
-  for (let k in messages) {
+  for (const k in messages) {
     extend[k] = messages[k]
   }
   return extend
 }
 
 function createStructs (overrideTypes) {
-  let types = Object.assign({}, defaultTypes, overrideTypes)
+  const types = Object.assign({}, defaultTypes, overrideTypes)
 
   // TODO: add segwit
-  let reject = (function () {
-    let baseStruct = struct([
+  const reject = (function () {
+    const baseStruct = struct([
       { name: 'message', type: struct.VarString(varint, 'ascii') },
       { name: 'ccode', type: struct.UInt8 },
       { name: 'reason', type: struct.VarString(varint, 'ascii') }
@@ -46,7 +46,7 @@ function createStructs (overrideTypes) {
     function decode (buffer, offset, end) {
       if (!offset) offset = 0
       if (!end) end = buffer.length
-      let value = baseStruct.decode(buffer, offset, end)
+      const value = baseStruct.decode(buffer, offset, end)
       decode.bytes = baseStruct.decode.bytes
       if (decode.bytes === end) {
         value.data = Buffer.alloc(0)
@@ -58,7 +58,7 @@ function createStructs (overrideTypes) {
     }
 
     function encodingLength (value) {
-      let dataLength = Buffer.isBuffer(value.data) ? value.data.length : 0
+      const dataLength = Buffer.isBuffer(value.data) ? value.data.length : 0
       return baseStruct.encodingLength(value) + dataLength
     }
 
@@ -121,8 +121,8 @@ function createStructs (overrideTypes) {
     ]),
     filterclear: struct([]),
     getaddr: struct([]),
-    ping: struct([ { name: 'nonce', type: types.buffer8 } ]),
-    pong: struct([ { name: 'nonce', type: types.buffer8 } ]),
+    ping: struct([{ name: 'nonce', type: types.buffer8 }]),
+    pong: struct([{ name: 'nonce', type: types.buffer8 }]),
     reject: reject,
     sendheaders: struct([]),
     verack: struct([]),

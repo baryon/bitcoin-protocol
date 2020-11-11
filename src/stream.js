@@ -8,7 +8,7 @@ const types = require('./types')
 const defaultMessages = require('./messages').defaultMessages
 
 function getChecksum (data) {
-  let tmp = createHash('sha256').update(data).digest()
+  const tmp = createHash('sha256').update(data).digest()
   return createHash('sha256').update(tmp).digest().slice(0, 4)
 }
 
@@ -23,13 +23,13 @@ const HEADER_LENGTH = messageHeader.encodingLength({
   magic: 0,
   command: '',
   length: 0,
-  checksum: new Buffer('01234567', 'hex')
+  checksum: Buffer.from('01234567', 'hex')
 })
 
 exports.createDecodeStream = function (opts) {
   opts = opts || {}
-  let messages = opts.messages || defaultMessages
-  let bl = new BufferList()
+  const messages = opts.messages || defaultMessages
+  const bl = new BufferList()
   let message
   return through(function (chunk, enc, cb) {
     bl.append(chunk)
@@ -56,8 +56,8 @@ exports.createDecodeStream = function (opts) {
       }
       if (message.length > bl.length) break
 
-      let payload = bl.slice(0, message.length)
-      let checksum = getChecksum(payload)
+      const payload = bl.slice(0, message.length)
+      const checksum = getChecksum(payload)
       if (!checksum.equals(message.checksum)) {
         return cb(new Error('Invalid message checksum. ' +
           'In header: "' + message.checksum.toString('hex') + '", ' +
@@ -89,9 +89,9 @@ exports.createDecodeStream = function (opts) {
 
 exports.createEncodeStream = function (opts) {
   opts = opts || {}
-  let messages = opts.messages || defaultMessages
+  const messages = opts.messages || defaultMessages
   return through(function (chunk, enc, cb) {
-    let command = messages[chunk.command]
+    const command = messages[chunk.command]
     if (!command) {
       return cb(new Error('Unrecognized command: "' + chunk.command + '"'))
     }
